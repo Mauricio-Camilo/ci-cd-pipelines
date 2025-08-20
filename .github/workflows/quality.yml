@@ -4,7 +4,7 @@ on:
   workflow_call:
 
 jobs:
-  build_app:
+  build_and_test:
     runs-on: ubuntu-latest 
 
     env:
