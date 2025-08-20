@@ -50,6 +50,6 @@ jobs:
             -Dsonar.projectKey=desafio-minsait \
             -Dsonar.organization=minsait-teste \
             -Dsonar.host.url=https://sonarcloud.io \
-            -Dsonar.token=f1bd97cb63f0f106e0ea547b5d0eb175f26678d4
+            -Dsonar.token=${{ secrets.SONAR_TOKEN }}
         env:
-          SONAR_TOKEN: f1bd97cb63f0f106e0ea547b5d0eb175f26678d4                         
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}                         
