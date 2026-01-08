@@ -1,0 +1,59 @@
+name: Tailscale Device Monitor
+
+on:
+  schedule:
+    - cron: "*/1 * * * *"
+  workflow_dispatch:
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check allowed time window
+        id: timecheck
+        run: |
+          # Horário UTC atual
+          HOUR=$(date -u +%H)
+          WEEKDAY=$(date -u +%u) # 1=Mon ... 7=Sun
+
+          echo "UTC hour: $HOUR"
+          echo "Weekday: $WEEKDAY"
+
+          # Segunda (1) a Sexta (5)
+          if [ "$WEEKDAY" -lt 1 ] || [ "$WEEKDAY" -gt 5 ]; then
+            echo "outside=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          # Janela válida:
+          # 11:00 UTC → 23:59 UTC
+          # 00:00 UTC → 03:00 UTC
+          if [ "$HOUR" -ge 11 ] || [ "$HOUR" -lt 3 ]; then
+            echo "outside=false" >> $GITHUB_OUTPUT
+          else
+            echo "outside=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Stop if outside window
+        if: steps.timecheck.outputs.outside == 'true'
+        run: |
+          echo "⏱️ Outside monitoring window. Skipping."
+          exit 0
+
+      - name: Check Tailscale device status
+        env:
+          TS_API_KEY: ${{ secrets.TS_API_KEY }}
+        run: |
+          STATUS=$(curl -s -u ${TS_API_KEY}: \
+            https://api.tailscale.com/api/v2/tailnet/-/devices \
+          | jq -r '.devices[] | select(.hostname=="ceiasp100") | .connectedToControl')
+
+          echo "Device status: $STATUS"
+
+          if [ "$STATUS" != "true" ]; then
+            echo "🚨 DEVICE OFFLINE"
+            exit 1
+          else
+            echo "✅ Device online"
+          fi
